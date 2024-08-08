@@ -5,6 +5,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//TODO: ignore comment below, this for note development
+
+// var realtime bool
+// var isLongDepth bool
+
 var cryptoCmd = &cobra.Command{
 	Use:     "crypto",
 	Aliases: []string{"c"},
@@ -16,9 +21,36 @@ var cryptoCmd = &cobra.Command{
 		if err != nil {
 			cmd.PrintErr(err)
 		}
+
+		// log.Println("realtime: ", realtime)
+		// realtime, _ := cmd.Flags().GetBool("realtime")
 	},
 }
 
 func init() {
+	// cryptoCmd.Flags().BoolVar(&realtime, "realtime", false, "Get realtime crypto market information")
 	rootCmd.AddCommand(cryptoCmd)
+
+	// cryptoCmd.Flags().BoolVar(&isLongDepth, "long-depth", false, "Get 3 high bid and 3 low asks info") // 3 depth bid and 3 depth ask
+
+	// cryptoCmd.Flags().BoolVar(false, "rt", "", "config for realtime crypto market")
 }
+
+// command
+
+// micli crypto --realtime / -rt
+// micli crypto --long-depth / -ld
+
+// micli crypto list [list existing pairs]
+// micli crypto order [pair] [order-number]
+// micli crypto order-list
+// micli crypto add [pair] --order=1
+// micli crypto remove [pair]
+// micli crypto
+
+// note pair can be lower or upper
+// but must have symbol "/" or "_" in between
+
+// --order = must be in number and cannot less than 1, and more than list existing market crypto
+
+//
