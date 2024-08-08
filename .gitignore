@@ -1,0 +1,9 @@
+# ignore DS_Store files
+.DS_Store
+DS_Store
+
+# secure file
+.cache_micli
+
+# ignore binaray files
+micli
