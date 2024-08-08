@@ -8,7 +8,7 @@ Currently, this cli compatible with darwin / mac terminal and only support the c
 ## How to install
 
 ### Prerequisite
-- Go 1.20 or later
+- Go 1.20 or higher
 - Make sure setup all go environment variable
 
 ### Install
