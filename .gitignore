@@ -4,6 +4,8 @@ DS_Store
 
 # secure file
 .cache_micli
+config.json
 
 # ignore binaray files
 micli
+
