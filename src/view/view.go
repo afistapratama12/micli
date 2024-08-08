@@ -16,7 +16,7 @@ func NewTableMarket(tableRows []table.Row) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 
-	t.AppendHeader(table.Row{"pair", "Current Price", "high bid / buy", "low ask / sell", "last buy/sell volume (USD)", "Last Update"})
+	t.AppendHeader(table.Row{"#", "pair", "Current Price", "high bid / buy", "low ask / sell", "last buy/sell volume (USD)", "Last Update"})
 
 	t.AppendRows(tableRows)
 	t.AppendSeparator()

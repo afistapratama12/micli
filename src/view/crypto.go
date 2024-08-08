@@ -11,29 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/afistapratama12/micli/constants"
 	"github.com/afistapratama12/micli/src/model"
 	"github.com/afistapratama12/micli/src/repo"
 	"github.com/afistapratama12/micli/src/service"
 	"github.com/afistapratama12/micli/src/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
-
-var listPairMarket = []string{
-	"BTC_USDT", "ETH_USDT", "BNB_USDT", "SOL_USDT", "XRP_USDT", "DOGE_USDT", "ADA_USDT", "TRX_USDT", "SHIB_USDT", "DOT_USDT",
-}
-
-var mapPairWS = map[string]string{
-	"BTCUSDT":  "BTC_USDT",
-	"ETHUSDT":  "ETH_USDT",
-	"BNBUSDT":  "BNB_USDT",
-	"SOLUSDT":  "SOL_USDT",
-	"XRPUSDT":  "XRP_USDT",
-	"DOGEUSDT": "DOGE_USDT",
-	"ADAUSDT":  "ADA_USDT",
-	"TRXUSDT":  "TRX_USDT",
-	"SHIBUSDT": "SHIB_USDT",
-	"DOTUSDT":  "DOT_USDT",
-}
 
 type CryptoView struct {
 	CryptoService service.ICrypto
@@ -85,23 +69,31 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Notify the channel when an interrupt or SIGTERM signal is received.
 	done := make(chan bool, 1)                         // Create a done channel to signal the goroutine to stop.
 
-	dataMap, err := v.CryptoService.CallFirst(listPairMarket)
+	cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	if err != nil {
+		return err
+	}
+
+	listPair := cache.ListPair
+
+	var mapPairWS = utils.CreateMapPairWS(listPair)
+	dataMap, err := v.CryptoService.CallFirst(listPair)
 	if err != nil {
 		return err
 	}
 
 	// create view first
 	tableRows := make([]table.Row, 0)
-	for idx, pair := range listPairMarket {
+	for idx, pair := range listPair {
 		data := dataMap[pair]
-		tableRows = append(tableRows, WriteRow(data, idx < len(listPairMarket)-1)...)
+		tableRows = append(tableRows, WriteRow(idx, data, idx < len(listPair)-1)...)
 	}
 
 	NewTableMarket(tableRows)
 
 	var wsBase = "wss://stream-cloud.binanceru.net/ws/"
 	var wsParam []string
-	for _, pair := range listPairMarket {
+	for _, pair := range listPair {
 		p := strings.ToLower(strings.Replace(pair, "_", "", 1))
 		wsParam = append(wsParam, []string{p + "@depth", p + "@aggTrade"}...)
 	}
@@ -196,13 +188,13 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 				// log.Println("call view in goroutine get data from ws")
 
 				tableRows := make([]table.Row, 0)
-				for idx, pair := range listPairMarket {
+				for idx, pair := range listPair {
 					var data model.Result
 					mu.Lock()
 					data = dataMap[pair]
 					mu.Unlock()
 
-					tableRows = append(tableRows, WriteRow(data, idx < len(listPairMarket)-1)...)
+					tableRows = append(tableRows, WriteRow(idx, data, idx < len(listPair)-1)...)
 				}
 
 				NewTableMarket(tableRows)
@@ -219,7 +211,7 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 	return nil
 }
 
-func WriteRow(data model.Result, addLine bool) []table.Row {
+func WriteRow(idx int, data model.Result, addLine bool) []table.Row {
 	var dateTrade time.Time
 
 	if data.AggrData.Timestamp > 0 {
@@ -251,6 +243,7 @@ func WriteRow(data model.Result, addLine bool) []table.Row {
 	lastTradeVol := fmt.Sprintf("%f", aggrPrice*aggrVol)
 
 	tableRows = append(tableRows, table.Row{
+		idx + 1,
 		data.Pair,
 		data.AggrData.Price,
 		bid,

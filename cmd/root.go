@@ -12,9 +12,11 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "micli",
 	Short: "Market information-cli",
-	Long: `Market information-cli is a CLI application for retrieving market information.
-
+	Long: `
+Market information-cli is a CLI application for market information.
 The application retrieves market information from a variety of sources and displays it to the user.	
+
+Currently, the application only support for Crypto market.
 	`,
 }
 

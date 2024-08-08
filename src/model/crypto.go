@@ -129,3 +129,7 @@ func (w WSAggrTradeData) ToAggrTradeData() AggrTradeData {
 		IsBestPriceMatch: w.IsBestPriceMatch,
 	}
 }
+
+type CacheData struct {
+	ListPair []string
+}
