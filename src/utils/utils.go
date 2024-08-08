@@ -22,37 +22,65 @@ func RunCmd(name string, arg ...string) {
 	cmd.Run()
 }
 
-// 3 scenario
-// if file exist and data exist, return
-// if file not exist, create file and add data, return
-// if file exist but data not exist, add data, return
-func ReadFileCache(path string) (res model.CacheData, err error) {
-	var f *os.File
-
-	f, err = os.Open(path)
+func CheckOrCreateFile(path string) error {
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			_, err = os.Create(path)
 			if err != nil {
-				return res, err
+				return err
 			}
 		} else {
-			return res, err
+			return err
 		}
 	}
 
-	f.Close()
+	defer f.Close()
+	return nil
+}
+
+func ModifyFileCache(f *os.File, data []byte) error {
+	var err error
+
+	// replace all data in file
+	err = f.Truncate(0)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 3 scenario
+// if file exist and data exist, return
+// if file not exist, create file and add data, return
+// if file exist but data not exist, add data, return
+func ReadFileCache(path string) (f *os.File, res model.CacheData, err error) {
+	err = CheckOrCreateFile(path)
+	if err != nil {
+		return
+	}
 
 	f, err = os.OpenFile(path, os.O_RDWR, 0644)
 	if err != nil {
-		return res, err
+		return nil, res, err
 	}
 
-	defer f.Close()
+	// defer f.Close()
 
 	b, err := io.ReadAll(f)
 	if err != nil {
-		return res, err
+		return nil, res, err
 	}
 
 	if len(string(b)) < 1 {
@@ -61,7 +89,7 @@ func ReadFileCache(path string) (res model.CacheData, err error) {
 
 		_, err = f.Write([]byte(data))
 		if err != nil {
-			return res, err
+			return nil, res, err
 		}
 
 		res.ListPair = constants.DEFAULT_PAIR
@@ -69,7 +97,7 @@ func ReadFileCache(path string) (res model.CacheData, err error) {
 		res.ListPair = strings.Split(string(b), ";")
 	}
 
-	return res, nil
+	return f, res, nil
 }
 
 func CreateMapPairWS(listPair []string) map[string]string {

@@ -2,7 +2,6 @@ package view
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -27,6 +26,84 @@ func NewCryptoView(CryptoService service.ICrypto) *CryptoView {
 	return &CryptoView{
 		CryptoService: CryptoService,
 	}
+}
+
+type PairArg struct {
+	Args   string
+	Exist  bool
+	ErrMsg string
+}
+
+func (v *CryptoView) AddNewPair(pairs []string) error {
+	// check for valid pair using map
+	// if exist value change to true
+	var mapPairs = make(map[string]PairArg)
+
+	for idx, pair := range pairs {
+		if !strings.Contains(pair, "/") && !strings.Contains(pair, "_") {
+			return fmt.Errorf("pair is invalid in argument no %d, format must be have '/' or '_' for example: BTC/USD, BTC_USD or btc/usdt, btc_usdt ...", idx+1)
+		}
+
+		key := strings.Replace(pair, "/", "_", -1)
+
+		mapPairs[key] = PairArg{
+			Args:  pair,
+			Exist: false,
+		}
+	}
+
+	listSymbol, err := v.CryptoService.GetAllSymbol()
+	if err != nil {
+		return err
+	}
+
+	for _, data := range listSymbol.Data.List {
+		if _, ok := mapPairs[data.Symbol]; ok {
+			if data.Type > 1 {
+				mapPairs[data.Symbol] = PairArg{
+					Args:   mapPairs[data.Symbol].Args,
+					Exist:  false,
+					ErrMsg: "currently not support for market with data in other binance",
+				}
+				continue
+			}
+
+			mapPairs[data.Symbol] = PairArg{
+				Args:  mapPairs[data.Symbol].Args,
+				Exist: true,
+			}
+		}
+	}
+
+	var validPairs []string
+
+	for key, val := range mapPairs {
+		if len(val.ErrMsg) > 0 {
+			return fmt.Errorf("error pair %s: %s", val.Args, val.ErrMsg)
+		}
+
+		if !val.Exist {
+			return fmt.Errorf("error pair %s: not found in market list", val.Args)
+		}
+
+		validPairs = append(validPairs, key)
+	}
+
+	f, cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	cache.ListPair = append(cache.ListPair, validPairs...)
+
+	err = utils.ModifyFileCache(f, []byte(strings.Join(cache.ListPair, ";")))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (v *CryptoView) GetAllListPair() error {
@@ -64,12 +141,14 @@ func (v *CryptoView) GetAllListPair() error {
 	return nil
 }
 
+// TODO: this code still not stable
+// need to refactor in temp variable every data change
 func (v *CryptoView) GetLiveCryptoMarket() error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Notify the channel when an interrupt or SIGTERM signal is received.
 	done := make(chan bool, 1)                         // Create a done channel to signal the goroutine to stop.
 
-	cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	_, cache, err := utils.ReadFileCache(constants.CACHE_FILE)
 	if err != nil {
 		return err
 	}
@@ -124,7 +203,6 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 					var data model.WSAggrTradeData
 					err = utils.ReadMessage(msg, &data)
 					if err != nil {
-						log.Printf("error read message, err = %v\n", err)
 						continue
 					}
 
@@ -146,7 +224,6 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 					var data model.WSDepthData
 					err = utils.ReadMessage(msg, &data)
 					if err != nil {
-						log.Printf("error read message, err = %v\n", err)
 						continue
 					}
 
@@ -185,8 +262,6 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 			case <-done:
 				return
 			default:
-				// log.Println("call view in goroutine get data from ws")
-
 				tableRows := make([]table.Row, 0)
 				for idx, pair := range listPair {
 					var data model.Result

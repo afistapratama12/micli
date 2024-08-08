@@ -44,7 +44,7 @@ func init() {
 // micli crypto list [list existing pairs]
 // micli crypto order [pair] [order-number]
 // micli crypto order-list
-// micli crypto add [pair] --order=1
+// micli crypto add [pair] [pair2] [pair...] --order=1
 // micli crypto remove [pair]
 // micli crypto
 

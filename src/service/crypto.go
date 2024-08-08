@@ -11,6 +11,7 @@ import (
 )
 
 type ICrypto interface {
+	GetAllSymbol() (*model.MarketView, error)
 	GetAllListPair() (res []model.ViewPairMarket, err error)
 	CallFirst(listPairMarket []string) (map[string]model.Result, error)
 }
@@ -23,6 +24,10 @@ func NewCryptoService(cryptoRepo repo.ICrypto) ICrypto {
 	return &crypto{
 		CryptoRepo: cryptoRepo,
 	}
+}
+
+func (s *crypto) GetAllSymbol() (*model.MarketView, error) {
+	return s.CryptoRepo.GetAllListPair()
 }
 
 func (s *crypto) GetAllListPair() (res []model.ViewPairMarket, err error) {
