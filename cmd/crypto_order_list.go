@@ -8,7 +8,7 @@ import (
 var cryptoOrderListCmd = &cobra.Command{
 	Use:     "order-list",
 	Aliases: []string{"ol"},
-	Short:   "list order pai in crypto market view",
+	Short:   "list order pair in crypto market view",
 	Run: func(cmd *cobra.Command, args []string) {
 		cryptoView := src.NewCrypto()
 		err := cryptoView.GetOrderList()
