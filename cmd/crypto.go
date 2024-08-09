@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"strconv"
+
 	"github.com/afistapratama12/micli/src"
 	"github.com/spf13/cobra"
 )
 
 //TODO: ignore comment below, this for note development
 
-// var realtime bool
+var realtime bool
+var interval string
+
 // var isLongDepth bool
 
 var cryptoCmd = &cobra.Command{
@@ -15,25 +19,38 @@ var cryptoCmd = &cobra.Command{
 	Aliases: []string{"c"},
 	Short:   "Get crypto market information",
 	Run: func(cmd *cobra.Command, args []string) {
-		cryptoView := src.NewCrypto()
+		var intervalTime = -1
+		var err error
 
-		err := cryptoView.GetLiveCryptoMarket()
+		if interval != "" || len(interval) > 0 {
+			if len(interval) < 2 {
+				cmd.PrintErr("Interval format must be in number and time unit, example: 1s, 3s, 10s")
+			}
+
+			if interval[len(interval)-1] != 's' {
+				cmd.PrintErr("only avaible time unit is second, example: 1s, 3s, 10s")
+			}
+
+			intervalTime, err = strconv.Atoi(interval[:len(interval)-1])
+			if err != nil {
+				cmd.PrintErr("Interval format must be in number and time unit, example: 1s, 3s, 10s")
+			}
+		}
+
+		cryptoView := src.NewCrypto()
+		err = cryptoView.GetLiveCryptoMarket(realtime, intervalTime)
 		if err != nil {
 			cmd.PrintErr(err)
 		}
-
-		// log.Println("realtime: ", realtime)
-		// realtime, _ := cmd.Flags().GetBool("realtime")
 	},
 }
 
 func init() {
-	// cryptoCmd.Flags().BoolVar(&realtime, "realtime", false, "Get realtime crypto market information")
 	rootCmd.AddCommand(cryptoCmd)
 
-	// cryptoCmd.Flags().BoolVar(&isLongDepth, "long-depth", false, "Get 3 high bid and 3 low asks info") // 3 depth bid and 3 depth ask
-
-	// cryptoCmd.Flags().BoolVar(false, "rt", "", "config for realtime crypto market")
+	cryptoCmd.Flags().BoolVarP(&realtime, "realtime", "r", false, "Realtime crypto market information")
+	cryptoCmd.Flags().StringVarP(&interval, "interval", "i", "", "Interval refresh data crypto market information, default 1s")
+	cryptoCmd.Flags().Lookup("realtime").NoOptDefVal = "true"
 }
 
 // command

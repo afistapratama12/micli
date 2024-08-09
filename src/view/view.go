@@ -10,8 +10,11 @@ import (
 
 // base view code
 
-func NewTableMarket(tableRows []table.Row) {
+func NewTableMarket(refreshtype string, tableRows []table.Row) {
 	utils.RunCmd("clear")
+
+	fmt.Printf("Source: Binance Market\n")
+	fmt.Printf("Update data: %s\n\n", refreshtype)
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)

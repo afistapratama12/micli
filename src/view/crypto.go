@@ -241,7 +241,7 @@ func (v *CryptoView) RemovePair(pairs []string) error {
 
 // TODO: this code still not stable
 // need to refactor in temp variable every data change
-func (v *CryptoView) GetLiveCryptoMarket() error {
+func (v *CryptoView) GetLiveCryptoMarket(isRealtime bool, interval int) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Notify the channel when an interrupt or SIGTERM signal is received.
 	done := make(chan bool, 1)                         // Create a done channel to signal the goroutine to stop.
@@ -266,7 +266,8 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 		tableRows = append(tableRows, WriteRow(idx, data, idx < len(listPair)-1)...)
 	}
 
-	NewTableMarket(tableRows)
+	textUpdate := TextUpdateData(isRealtime, interval)
+	NewTableMarket(textUpdate, tableRows)
 
 	var wsBase = "wss://stream-cloud.binanceru.net/ws/"
 	var wsParam []string
@@ -354,7 +355,7 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 		}
 	}()
 
-	go func() {
+	go func(realtime bool, itvTime int) {
 		for {
 			select {
 			case <-done:
@@ -370,11 +371,23 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 					tableRows = append(tableRows, WriteRow(idx, data, idx < len(listPair)-1)...)
 				}
 
-				NewTableMarket(tableRows)
-				time.Sleep(1 * time.Second)
+				textUpdate := TextUpdateData(realtime, itvTime)
+				NewTableMarket(textUpdate, tableRows)
+
+				if !realtime && itvTime < 1 {
+					time.Sleep(1 * time.Second)
+				} else {
+					if realtime {
+						time.Sleep(100 * time.Millisecond)
+					}
+
+					if itvTime > 0 {
+						time.Sleep(time.Duration(itvTime) * time.Second)
+					}
+				}
 			}
 		}
-	}()
+	}(isRealtime, interval)
 
 	<-sigs       // Block until a signal is received.
 	done <- true // Send a signal to the goroutine to stop.
@@ -430,4 +443,16 @@ func WriteRow(idx int, data model.Result, addLine bool) []table.Row {
 	}
 
 	return tableRows
+}
+
+func TextUpdateData(realtime bool, interval int) string {
+	if realtime {
+		return "Realtime"
+	}
+
+	if interval > 0 {
+		return fmt.Sprintf("every %d second", interval)
+	}
+
+	return "every 1 second"
 }
