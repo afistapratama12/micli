@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/afistapratama12/micli/constants"
+	"github.com/afistapratama12/micli/src/constants"
 	"github.com/spf13/cobra"
 )
 

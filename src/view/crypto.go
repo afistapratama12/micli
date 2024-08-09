@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/afistapratama12/micli/constants"
+	"github.com/afistapratama12/micli/src/constants"
 	"github.com/afistapratama12/micli/src/model"
 	"github.com/afistapratama12/micli/src/repo"
 	"github.com/afistapratama12/micli/src/service"
@@ -34,6 +34,23 @@ type PairArg struct {
 	ErrMsg string
 }
 
+func (v *CryptoView) GetOrderList() error {
+	_, cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("\nList Market Pair:")
+
+	for idx, pair := range cache.ListPair {
+		fmt.Printf("%d. %s\n", idx+1, pair)
+	}
+
+	fmt.Println()
+
+	return nil
+}
+
 func (v *CryptoView) AddNewPair(pairs []string) error {
 	// check for valid pair using map
 	// if exist value change to true
@@ -41,11 +58,10 @@ func (v *CryptoView) AddNewPair(pairs []string) error {
 
 	for idx, pair := range pairs {
 		if !strings.Contains(pair, "/") && !strings.Contains(pair, "_") {
-			return fmt.Errorf("pair is invalid in argument no %d, format must be have '/' or '_' for example: BTC/USD, BTC_USD or btc/usdt, btc_usdt ...", idx+1)
+			return fmt.Errorf("pair is invalid in argument no %d, format must be have '/' or '_' for example: BTC/USD, BTC_USD or btc/usdt, btc_usdt", idx+1)
 		}
 
-		key := strings.Replace(pair, "/", "_", -1)
-
+		key := strings.ToUpper(strings.Replace(pair, "/", "_", -1))
 		mapPairs[key] = PairArg{
 			Args:  pair,
 			Exist: false,
@@ -137,6 +153,88 @@ func (v *CryptoView) GetAllListPair() error {
 	t.AppendRows(tableRows)
 	t.AppendSeparator()
 	t.Render()
+
+	return nil
+}
+
+func (v *CryptoView) ReorderPair(pair string, ord int) error {
+	f, cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if ord > len(cache.ListPair) {
+		return fmt.Errorf("invalid order number, cannot more than %d", len(cache.ListPair))
+	}
+
+	checkPair := strings.ToUpper(strings.Replace(pair, "/", "_", -1))
+	lastIdx := -1
+	destIdx := ord - 1
+
+	for idx, p := range cache.ListPair {
+		if p == checkPair {
+			lastIdx = idx
+			break
+		}
+	}
+
+	if lastIdx == -1 {
+		return fmt.Errorf("pair %s not found in list", pair)
+	}
+
+	// example: btc_usdt 2
+
+	// list pair : [eth_usdt, nano_usdt, bnb_usdt, btc_usdt]
+	// result list: [eth_usdt, btc_usdt, nano_usdt, bnb_usdt]
+
+	// 1 remove btc_usdt
+	cache.ListPair = append(cache.ListPair[:lastIdx], cache.ListPair[lastIdx+1:]...)
+
+	// 2 insert btc_usdt to destIdx
+	cache.ListPair = append(cache.ListPair[:destIdx], append([]string{checkPair}, cache.ListPair[destIdx:]...)...)
+
+	// 3 write to file
+	err = utils.ModifyFileCache(f, []byte(strings.Join(cache.ListPair, ";")))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *CryptoView) RemovePair(pairs []string) error {
+	var rmPairs []string
+
+	for idx, pair := range pairs {
+		if !strings.Contains(pair, "/") && !strings.Contains(pair, "_") {
+			return fmt.Errorf("pair is invalid in argument no %d, format must be have '/' or '_' for example: BTC/USD, BTC_USD or btc/usdt, btc_usdt", idx+1)
+		}
+
+		rmPair := strings.ToUpper(strings.Replace(pair, "/", "_", -1))
+		rmPairs = append(rmPairs, rmPair)
+	}
+
+	f, cache, err := utils.ReadFileCache(constants.CACHE_FILE)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	// comparing
+	isItemNotExist, itemNotExist := utils.CompareData(cache.ListPair, rmPairs)
+	if isItemNotExist {
+		return fmt.Errorf("pair [ %s ] not found in list", strings.Join(itemNotExist, ", "))
+	}
+
+	cache.ListPair = utils.RemoveItems(cache.ListPair, rmPairs)
+
+	err = utils.ModifyFileCache(f, []byte(strings.Join(cache.ListPair, ";")))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -280,8 +378,6 @@ func (v *CryptoView) GetLiveCryptoMarket() error {
 
 	<-sigs       // Block until a signal is received.
 	done <- true // Send a signal to the goroutine to stop.
-
-	utils.RunCmd("clear")
 
 	return nil
 }

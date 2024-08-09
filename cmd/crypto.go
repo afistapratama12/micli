@@ -41,12 +41,12 @@ func init() {
 // micli crypto --realtime / -rt
 // micli crypto --long-depth / -ld
 
-// micli crypto list [list existing pairs]
+// micli crypto [done, option still not implement]
+// micli crypto list [done]
+// micli crypto add [pair] [pair2] [pair...] --order-at=1 [done, option still not implement]
 // micli crypto order [pair] [order-number]
 // micli crypto order-list
-// micli crypto add [pair] [pair2] [pair...] --order=1
-// micli crypto remove [pair]
-// micli crypto
+// micli crypto remove [pair] [pair2] [pair...]
 
 // note pair can be lower or upper
 // but must have symbol "/" or "_" in between

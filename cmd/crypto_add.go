@@ -26,7 +26,7 @@ var cryptoAddCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("add pair successfully")
+		fmt.Printf("add pair success\n")
 		fmt.Printf("new pair added: %s\n", strings.Join(args, ", "))
 	},
 }

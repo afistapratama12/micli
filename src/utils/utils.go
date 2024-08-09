@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/afistapratama12/micli/constants"
+	"github.com/afistapratama12/micli/src/constants"
 	"github.com/afistapratama12/micli/src/model"
 )
 
@@ -108,4 +108,45 @@ func CreateMapPairWS(listPair []string) map[string]string {
 	}
 
 	return mapPairWS
+}
+
+func RemoveItems[V comparable](orig []V, itemsToRemove []V) []V {
+	/// change itemsToRemove to map, for O(n) complexity
+	itemsMap := make(map[V]struct{})
+
+	for _, item := range itemsToRemove {
+		itemsMap[item] = struct{}{}
+	}
+
+	result := []V{}
+
+	// check every item in orig
+	for _, item := range orig {
+		if _, ok := itemsMap[item]; !ok {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+// return true if item not exist in orig
+func CompareData[V comparable](orig []V, itemsToCheck []V) (bool, []V) {
+	var isItemNotExist = false
+	var itemsNotExist []V
+
+	origMap := make(map[V]struct{})
+
+	for _, item := range orig {
+		origMap[item] = struct{}{}
+	}
+
+	for _, item := range itemsToCheck {
+		if _, ok := origMap[item]; !ok {
+			isItemNotExist = true
+			itemsNotExist = append(itemsNotExist, item)
+		}
+	}
+
+	return isItemNotExist, itemsNotExist
 }

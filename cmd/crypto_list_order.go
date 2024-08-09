@@ -5,9 +5,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cryptoOrderListCmd = &cobra.Command{
-	Use:     "order-list",
-	Aliases: []string{"ol"},
+var cryptoListOrderCmd = &cobra.Command{
+	Use:     "list-order",
+	Aliases: []string{"lo"},
 	Short:   "list order pai in crypto market view",
 	Run: func(cmd *cobra.Command, args []string) {
 		cryptoView := src.NewCrypto()
@@ -20,5 +20,5 @@ var cryptoOrderListCmd = &cobra.Command{
 }
 
 func init() {
-	cryptoCmd.AddCommand(cryptoOrderListCmd)
+	cryptoCmd.AddCommand(cryptoListOrderCmd)
 }
